@@ -311,6 +311,46 @@ function addUser(socket, name) {
   updateSidebar(socket);
 }
 
+function removeUser(socket, name) {
+  var room = socket.room;
+  socket.username = name;
+  socket.emit('set username', {
+    username: socket.username
+  });
+
+  if (!rooms[room].contains(name)) { //if user isn't already in the room
+    console.log('New name, removing to room');
+    --rooms[room].numUsers;
+
+    //remove a reference to the room if user has rooms and current room not on it
+    var sessRooms = socket.request.session.userRooms;
+    var prevRooms = socket.request.session.previousRooms;
+
+    if (!prevRooms) {
+      --rooms[room].numReferences;
+    } else if (prevRooms.indexOf(rooms[room].name) === -1) {
+      --rooms[room].numReferences;
+    }
+
+    //let everyone else know user has joined
+    socket.broadcast.to(room).emit('user removed', {
+      username: name,
+      numUsers: rooms[room].numUsers
+    });
+
+    //for everyone else, only add new member
+    socket.broadcast.to(room).emit('remove user profile', {
+        username: name
+    });
+  }
+
+  rooms[room].addMember(name);
+  console.log(rooms[room].members);
+
+  displayChatHistory(socket);
+  updateSidebar(socket);
+}
+
 function displayChatHistory(socket) {
   var chatArray = chatHistory[socket.room];
   for (var i = 0; i < chatArray.length; i++) {

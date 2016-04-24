@@ -29,6 +29,32 @@ $(function() {
   var locked = false;
   var roomId;
   var socket = io();
+  //var date = new Date();
+  var current_hour = new Date().toISOString().replace(/T/, ' ').replace(/\..+/, '');//date.getTime();
+  function getTime() {
+
+      var dates = new Date();
+
+      var hour = dates.getHours();
+      //hour = (hour < 10 ? "0" : "") + hour;
+
+      var min  = dates.getMinutes();
+      //min = (min < 10 ? "0" : "") + min;
+
+      var sec  = dates.getSeconds();
+      //sec = (sec < 10 ? "0" : "") + sec;
+
+      var year = dates.getFullYear();
+
+      var month = dates.getMonth() + 1;
+      //month = (month < 10 ? "0" : "") + month;
+
+      var day  = dates.getDate();
+      //day = (day < 10 ? "0" : "") + day;
+
+      return "             " + day + "/" + month + "/" + year + "   " + hour + ":" + min + ":" + sec;
+
+  }
 
 
   /* FOR PRIVATE CHATS */
@@ -121,12 +147,13 @@ $(function() {
           '<div class="circle ' + userColor(user, false) + '">'+initial+'</div>' +
           '<b></b>' +
         '</div>' +
-        '<p></p>' +
+        '<p></p>' + '<loo></loo>' +
       '</li>'
     );
 
     $li.find('p').text(message);
     $li.find('b').text(user);
+    $li.find('loo').text(current_hour);
 
     postMessage($li);
   }
@@ -179,13 +206,15 @@ $(function() {
 
   function addUserToList(username) {
     var initial = username.charAt(0);
+    var route = '';
 
     var $li = $(
       '<li class="user-preview">' +
         '<div class="circle-preview ' + userColor(username, false) + '">'
           + initial +
         '</div>' +
-        '<p>' + username + '</p>' +
+        '<p>' + username + '</p>' + //'<a href="' + route + '">' + username + '</a>' + '<span class="remove-user">  —  </span>' +
+        //'<a href="' + route + '">' + username + '</a>' + '<span class="remove-user">  —  </span>' +
       '</li>'
     );
     $li.data('username', username);
@@ -197,6 +226,16 @@ $(function() {
     $('.user-preview').filter(function(i){
       return $(this).data('username') === username;
     }).remove();
+
+    /*$.ajax({
+      url: '/deleteUser',
+      method: 'DELETE',
+      data: {users: users},
+      dataType: 'JSON'
+    })
+    .fail(function(){
+      alert('Error deleting this user');
+    });*/
   }
 
   function addRoomToList(roomName, id, isCurrent) {
@@ -310,6 +349,17 @@ $(function() {
     });
   });
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+$(document).on('click', '.remove-user', function(){
+  var toRemove = $(this).parent().data('username');
+  socket.emit('remove user', {
+    users: toRemove
+  });
+});
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
   //socket
   socket.on('connect', function(){
     if (base === 'chats' && id) {
@@ -383,6 +433,12 @@ $(function() {
     removeRoomFromList(data.roomName);
   });
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  socket.on('remove user', function(data){
+    removeUserFromList(data.username);
+  });
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   socket.on('redirect to room', function(data){
     window.location.href = "/chats/"+data.id;
   });
